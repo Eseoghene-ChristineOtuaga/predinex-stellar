@@ -191,10 +191,10 @@ export class SorobanTransactionService {
         contract.call(
           "create_pool",
           new Address(wallet.address).toScVal(),
-          nativeToScVal(params.title),
-          nativeToScVal(params.description),
-          nativeToScVal(params.outcomeA),
-          nativeToScVal(params.outcomeB),
+          nativeToScVal(params.title, { type: "string" }),
+          nativeToScVal(params.description, { type: "string" }),
+          nativeToScVal(params.outcomeA, { type: "string" }),
+          nativeToScVal(params.outcomeB, { type: "string" }),
           nativeToScVal(params.duration, { type: "u64" }),
         ),
       )
@@ -233,11 +233,17 @@ export class SorobanTransactionService {
         contract.call(
           "create_multi_outcome_pool",
           new Address(wallet.address).toScVal(),
-          nativeToScVal(params.title),
-          nativeToScVal(params.description),
-          nativeToScVal(params.outcomes),
+          nativeToScVal(params.title, { type: "string" }),
+          nativeToScVal(params.description, { type: "string" }),
+          xdr.ScVal.scvVec(
+            params.outcomes.map((outcome) =>
+              nativeToScVal(outcome, { type: "string" }),
+            ),
+          ),
           nativeToScVal(params.duration, { type: "u64" }),
-          nativeToScVal(params.metadataUri ?? null),
+          params.metadataUri
+            ? nativeToScVal(params.metadataUri, { type: "string" })
+            : nativeToScVal(null),
         ),
       )
       .setTimeout(30)
@@ -269,13 +275,43 @@ export class SorobanTransactionService {
 
     const contract = new Contract(contractId);
     const sourceAccount = await this.server.getAccount(wallet.address);
-    const overrides = {
-      title: params.overrides.title ?? null,
-      description: params.overrides.description ?? null,
-      outcomes: params.overrides.outcomes ?? null,
-      duration: params.overrides.duration ?? null,
-      metadata_uri: params.overrides.metadataUri ?? null,
-    };
+    const scOverrides = xdr.ScVal.scvMap([
+      new xdr.ScMapEntry({
+        key: xdr.ScVal.scvSymbol("description"),
+        val: params.overrides.description
+          ? nativeToScVal(params.overrides.description, { type: "string" })
+          : nativeToScVal(null),
+      }),
+      new xdr.ScMapEntry({
+        key: xdr.ScVal.scvSymbol("duration"),
+        val:
+          params.overrides.duration != null
+            ? nativeToScVal(params.overrides.duration, { type: "u64" })
+            : nativeToScVal(null),
+      }),
+      new xdr.ScMapEntry({
+        key: xdr.ScVal.scvSymbol("metadata_uri"),
+        val: params.overrides.metadataUri
+          ? nativeToScVal(params.overrides.metadataUri, { type: "string" })
+          : nativeToScVal(null),
+      }),
+      new xdr.ScMapEntry({
+        key: xdr.ScVal.scvSymbol("outcomes"),
+        val: params.overrides.outcomes
+          ? xdr.ScVal.scvVec(
+              params.overrides.outcomes.map((o) =>
+                nativeToScVal(o, { type: "string" }),
+              ),
+            )
+          : nativeToScVal(null),
+      }),
+      new xdr.ScMapEntry({
+        key: xdr.ScVal.scvSymbol("title"),
+        val: params.overrides.title
+          ? nativeToScVal(params.overrides.title, { type: "string" })
+          : nativeToScVal(null),
+      }),
+    ]);
 
     const tx = new TransactionBuilder(sourceAccount, {
       fee: "1000",
@@ -286,7 +322,7 @@ export class SorobanTransactionService {
           "create_pool_from_template",
           new Address(wallet.address).toScVal(),
           nativeToScVal(params.templateId, { type: "u32" }),
-          nativeToScVal(overrides),
+          scOverrides,
         ),
       )
       .setTimeout(30)

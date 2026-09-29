@@ -3588,7 +3588,7 @@ impl PredinexContract {
         outcomes
     }
 
-    fn read_outcome_totals(env: &Env, pool_id: u32, pool: &Pool) -> Vec<i128> {
+    pub(crate) fn read_outcome_totals(env: &Env, pool_id: u32, pool: &Pool) -> Vec<i128> {
         if let Some(totals) = env
             .storage()
             .persistent()
@@ -3602,7 +3602,7 @@ impl PredinexContract {
         totals
     }
 
-    fn read_user_outcome_bets(env: &Env, pool_id: u32, user: Address, bet: &UserBet) -> Vec<i128> {
+    pub(crate) fn read_user_outcome_bets(env: &Env, pool_id: u32, user: Address, bet: &UserBet) -> Vec<i128> {
         if let Some(amounts) = env
             .storage()
             .persistent()
@@ -3616,7 +3616,7 @@ impl PredinexContract {
         amounts
     }
 
-    fn sum_totals(totals: &Vec<i128>) -> Result<i128, ContractError> {
+    pub(crate) fn sum_totals(totals: &Vec<i128>) -> Result<i128, ContractError> {
         let mut total = 0i128;
         for value in totals.iter() {
             total = total
@@ -6915,7 +6915,10 @@ impl PredinexContract {
         };
 
         for i in 0..cap {
-            let pool_id = pool_ids.get(i).ok_or(ContractError::PoolNotFound)?;
+            let pool_id = match pool_ids.get(i) {
+                Some(id) => id,
+                None => continue,
+            };
 
             // Skip multi-asset pools — callers must use claim_multi_asset_winnings.
             if env
