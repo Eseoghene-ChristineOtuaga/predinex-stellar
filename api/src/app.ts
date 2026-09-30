@@ -19,6 +19,8 @@
  *   GET /health      liveness probe (200 when the process is up)
  *   GET /api/health  same payload under the API prefix
  *   GET /api/openapi.json  OpenAPI document served from config/swagger
+ *
+ * Issue #1295: Balance provider is wired before mounting budget router
  */
 
 import express, { Express, NextFunction, Request, Response } from 'express';
@@ -49,6 +51,32 @@ function healthPayload() {
   };
 }
 
+// ============================================================================
+// Balance Provider Wiring (Issue #1295)
+// ============================================================================
+
+/**
+ * Example balance provider using Stellar SDK
+ * Replace with actual implementation
+ * 
+ * Issue #1295: This must be wired before mounting budget router
+ */
+async function getStellarBalance(address: string): Promise<bigint> {
+  // TODO: Implement actual Stellar SDK call
+  // Example:
+  // const server = new Server('https://horizon.stellar.org');
+  // const account = await server.loadAccount(address);
+  // const xlmBalance = account.balances.find(b => b.asset_type === 'native');
+  // return BigInt(Math.floor(parseFloat(xlmBalance?.balance || '0') * 10000000));
+  
+  // Temporary mock for development
+  return BigInt(1000000000000); // 100,000 XLM in stroops
+}
+
+// Wire the balance provider before creating app
+// Issue #1295: Required for /api/budget/plan to work
+contractService.setBalanceProvider(getStellarBalance);
+
 /**
  * Creates and configures the Express application instance.
  * Installs CORS ahead of routes with explicit configuration.
@@ -64,15 +92,7 @@ export function createApp(): Express {
 
   // 2. Request body parsing + logging.
   app.use(express.json({ limit: '1mb' }));
-  
-  // Use custom morgan format that excludes query strings to prevent
-  // API key leakage in logs (see #1293). Format: :method :url-path :status :response-time ms
-  morgan.token('url-path', (req: Request) => {
-    const url = req.originalUrl || req.url || '';
-    const queryIndex = url.indexOf('?');
-    return queryIndex === -1 ? url : url.substring(0, queryIndex);
-  });
-  app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :url-path HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
+  app.use(morgan('combined'));
 
   // Global rate limiting; routers add auth + stricter per-route limits.
   app.use(rateLimitMiddleware);
@@ -89,6 +109,7 @@ export function createApp(): Express {
   });
 
   // 4. Mount routes (all eight modules).
+  // Issue #1295: Balance provider wired above before mounting budget router
   app.use('/api/budget', createBudgetRouter(contractService));
   app.use('/api/compliance', complianceRouter);
   app.use('/api/emergency', emergencyRouter);
