@@ -5,7 +5,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
-import { AuthValidator, authMiddleware } from '../middleware/auth.js';
+import { AuthValidator, authMiddleware, sharedAuthValidator } from '../middleware/auth.js';
 import { rateLimitMiddleware } from '../middleware/rate-limit.js';
 import { SecuritySanitizer } from '../middleware/security.js';
 
@@ -48,7 +48,6 @@ export class ReferralContractService {
 }
 
 export const defaultReferralService = new ReferralContractService();
-const authValidator = new AuthValidator();
 
 export const referralValidation = [
   body('referrerAddress')
@@ -66,7 +65,7 @@ export const referralValidation = [
 
 export function createReferralRouter(
   contractService: ReferralContractService = defaultReferralService,
-  auth: AuthValidator = authValidator
+  auth: AuthValidator = sharedAuthValidator
 ): Router {
   const router = Router();
 
