@@ -32,6 +32,8 @@ export const predinexContract = {
     outcomeA: string;
     outcomeB: string;
     durationSeconds: number;
+    creatorDepositStroops?: number | bigint;
+    depositDeadline?: number | null;
     onStageChange?: (stage: TxStage) => void;
     onFeeEstimated?: (feeStroops: string) => Promise<boolean>;
   }): Promise<{ txHash: string }> {
@@ -47,6 +49,8 @@ export const predinexContract = {
         outcomeA: params.outcomeA,
         outcomeB: params.outcomeB,
         duration: params.durationSeconds,
+        amountStroops: params.creatorDepositStroops,
+        depositDeadline: params.depositDeadline,
       },
       params.onStageChange,
       params.onFeeEstimated
@@ -81,6 +85,7 @@ export const predinexContract = {
     outcomes: string[];
     durationSeconds: number;
     metadataUri?: string | null;
+    creatorDepositStroops?: number | bigint;
     onStageChange?: (stage: TxStage) => void;
     onFeeEstimated?: (feeStroops: string) => Promise<boolean>;
   }): Promise<{ txHash: string }> {
@@ -96,6 +101,7 @@ export const predinexContract = {
         outcomes: params.outcomes,
         duration: params.durationSeconds,
         metadataUri: params.metadataUri,
+        amountStroops: params.creatorDepositStroops,
       },
       params.onStageChange,
       params.onFeeEstimated
@@ -262,6 +268,7 @@ export const predinexContract = {
     poolId: number;
     outcome: number;
     amountStroops: number;
+    referrer?: string | null;
     onStageChange?: (stage: TxStage) => void;
     onFeeEstimated?: (feeStroops: string) => Promise<boolean>;
   }): Promise<{ txHash: string }> {
@@ -275,6 +282,7 @@ export const predinexContract = {
         poolId: params.poolId,
         outcome: params.outcome,
         amountStroops: params.amountStroops,
+        referrer: params.referrer,
       },
       params.onStageChange,
       params.onFeeEstimated
